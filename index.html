@@ -24,7 +24,7 @@
     .logo {
       display: block;
       margin: 0 auto 12px;
-      max-width: 250px; /* tamaño mediano */
+      max-width: 180px;
       height: auto;
     }
     h1 {
@@ -315,7 +315,7 @@
               <option value="si">Incluir cocina integral</option>
             </select>
             <small style="font-size:0.8rem;color:#555;">
-              El costo depende del tipo de vivienda (interés social, medio, alto, lujo).
+              El costo se ajustará según el tipo de vivienda.
             </small>
           </div>
 
@@ -324,7 +324,7 @@
             <label>Closets en recámaras</label>
             <div class="checkbox-row">
               <input type="checkbox" id="closets">
-              <span>Incluir closets en todas las recámaras (cada uno agrega $25,000)</span>
+              <span>Incluir closets en todas las recámaras</span>
             </div>
           </div>
 
@@ -333,8 +333,8 @@
             <label for="paneles">Paneles solares</label>
             <select id="paneles">
               <option value="ninguno">No considerar paneles solares</option>
-              <option value="preparacion">Solo preparación para paneles solares (+$15,000)</option>
-              <option value="incluidos">Paneles solares incluidos (+$100,000)</option>
+              <option value="preparacion">Solo preparación para paneles solares</option>
+              <option value="incluidos">Paneles solares incluidos</option>
             </select>
           </div>
 
@@ -346,8 +346,26 @@
               <span>Incluir equipos de aire acondicionado</span>
             </div>
             <small style="font-size:0.8rem;color:#555;">
-              Se considera 1 minisplit para sala, 1 para comedor, 1 por recámara y 1 para estancia en planta alta (si la hay). Cada uno agrega $12,000.
+              Se considera 1 minisplit para sala, 1 para comedor, 1 por recámara y 1 para estancia en planta alta (si la hay).
             </small>
+          </div>
+
+          <!-- Alberca (solo alto / lujo) -->
+          <div class="field hidden" id="campoAlberca">
+            <label>Alberca</label>
+            <div class="checkbox-row">
+              <input type="checkbox" id="alberca" disabled>
+              <span>Incluir alberca</span>
+            </div>
+          </div>
+
+          <!-- Asador techado (medio, alto, lujo) -->
+          <div class="field hidden" id="campoAsador">
+            <label>Asador techado</label>
+            <div class="checkbox-row">
+              <input type="checkbox" id="asador" disabled>
+              <span>Incluir área de asador techado</span>
+            </div>
           </div>
 
           <!-- Comentarios -->
@@ -409,10 +427,10 @@
   <script>
     // ==== CONFIGURACIÓN: COSTO POR M2 ====
     const costosPorM2 = {
-      social: 12000,  // MXN/m²
-      medio: 15000,   // MXN/m²
-      alto: 20000,    // MXN/m²
-      lujo: 25000     // MXN/m²
+      social: 12000,
+      medio: 15000,
+      alto: 20000,
+      lujo: 25000
     };
 
     // ==== REFERENCIAS A PASOS ====
@@ -437,6 +455,11 @@
     const estanciaAltaCheckbox = document.getElementById('estanciaAlta');
     const cocheraAutosInput = document.getElementById('cocheraAutos');
     const cocheraTechadaCheckbox = document.getElementById('cocheraTechada');
+
+    const campoAlberca = document.getElementById('campoAlberca');
+    const albercaCheckbox = document.getElementById('alberca');
+    const campoAsador = document.getElementById('campoAsador');
+    const asadorCheckbox = document.getElementById('asador');
 
     // ==== NAVEGACIÓN DE PASOS ====
     btnContinuar1.addEventListener('click', () => {
@@ -478,12 +501,12 @@
       paso3.classList.remove('hidden');
     });
 
-    // ==== OPCIONES ESPECIALES: DOBLE ALTURA Y ESTANCIA ALTA ====
+    // ==== OPCIONES ESPECIALES: DOBLE ALTURA, ESTANCIA, ALBERCA, ASADOR ====
     function updateOpcionesEspeciales() {
       const tipo = tipoViviendaSelect.value;
       const niveles = parseInt(nivelesSelect.value || '1', 10);
 
-      // Solo disponible para nivel medio / alto / lujo y exactamente 2 niveles
+      // Doble altura y estancia: solo medio / alto / lujo con 2 niveles
       const habilitarEspeciales =
         (tipo === 'medio' || tipo === 'alto' || tipo === 'lujo') && niveles === 2;
 
@@ -500,6 +523,28 @@
         dobleAlturaCheckbox.disabled = true;
         estanciaAltaCheckbox.disabled = true;
       }
+
+      // Alberca: solo alto / lujo
+      const habilitarAlberca = (tipo === 'alto' || tipo === 'lujo');
+      if (habilitarAlberca) {
+        campoAlberca.classList.remove('hidden');
+        albercaCheckbox.disabled = false;
+      } else {
+        campoAlberca.classList.add('hidden');
+        albercaCheckbox.checked = false;
+        albercaCheckbox.disabled = true;
+      }
+
+      // Asador techado: medio / alto / lujo
+      const habilitarAsador = (tipo === 'medio' || tipo === 'alto' || tipo === 'lujo');
+      if (habilitarAsador) {
+        campoAsador.classList.remove('hidden');
+        asadorCheckbox.disabled = false;
+      } else {
+        campoAsador.classList.add('hidden');
+        asadorCheckbox.checked = false;
+        asadorCheckbox.disabled = true;
+      }
     }
 
     tipoViviendaSelect.addEventListener('change', updateOpcionesEspeciales);
@@ -507,7 +552,7 @@
 
     // ==== CÁLCULO PARAMÉTRICO ====
     btnCalcular.addEventListener('click', () => {
-      // Paso 1: datos y terreno
+      // Paso 1
       const nombre = document.getElementById('nombre').value.trim();
       const email = document.getElementById('email').value.trim();
       const whatsapp = document.getElementById('whatsapp').value.trim();
@@ -515,7 +560,7 @@
       const ciudad = document.getElementById('ciudad').value.trim();
       const estado = document.getElementById('estado').value.trim();
 
-      // Paso 2: configuración de la casa
+      // Paso 2
       const tipoVivienda = tipoViviendaSelect.value;
       const niveles = parseInt(nivelesSelect.value || '1', 10);
       const recamaras = parseInt(document.getElementById('recamaras').value || '0', 10);
@@ -534,20 +579,22 @@
         return;
       }
 
-      // Paso 3: extras
+      // Paso 3
       const cocina = document.getElementById('cocina').value;
       const closets = document.getElementById('closets').checked;
       const paneles = document.getElementById('paneles').value;
       const aires = document.getElementById('aires').checked;
+      const alberca = albercaCheckbox.checked;
+      const asador = asadorCheckbox.checked;
       const comentarios = document.getElementById('comentarios').value.trim();
 
       // === Cálculo de m² base ===
       let m2Base = 0;
       const M2_SALA = 20;
 
-      // Sala-comedor + cocina (se asumen siempre)
-      m2Base += M2_SALA; // sala-comedor
-      m2Base += 10;      // cocina
+      // Sala-comedor + cocina
+      m2Base += M2_SALA;
+      m2Base += 10;
 
       // Recámaras
       m2Base += recamaras * 12;
@@ -556,7 +603,7 @@
       m2Base += banosCompletos * 5;
       m2Base += mediosBanos * 3;
 
-      // Cochera solo si es techada
+      // Cochera techada
       if (cocheraAutos > 0 && cocheraTechada) {
         m2Base += cocheraAutos * 15;
       }
@@ -570,17 +617,17 @@
       // Terraza / roof
       if (terraza) m2Base += 10;
 
-      // Doble altura (duplicamos área de sala)
+      // Doble altura
       if (dobleAltura) {
         m2Base += M2_SALA;
       }
 
-      // Estancia en planta alta (asumimos 12 m²)
+      // Estancia en planta alta
       if (estanciaAlta) {
         m2Base += 12;
       }
 
-      // Circulaciones y muros (25%)
+      // Circulaciones y muros
       let m2Totales = m2Base * 1.25;
 
       // Factor por niveles
@@ -589,15 +636,13 @@
       if (niveles === 3) factorNiveles = 1.10;
 
       let m2Ajustados = m2Totales * factorNiveles;
-
-      // Redondeo a múltiplos de 5 m²
       m2Ajustados = Math.round(m2Ajustados / 5) * 5;
 
-      // === Costo base por m² ===
+      // === Costo base ===
       const costoM2 = costosPorM2[tipoVivienda] || 0;
       const costoBase = m2Ajustados * costoM2;
 
-      // === Costos adicionales (extras) ===
+      // === Costos adicionales ===
       let costoClosets = 0;
       if (closets) {
         costoClosets = recamaras * 25000;
@@ -620,17 +665,27 @@
 
       let costoAires = 0;
       if (aires) {
-        // 1 minisplit para sala, 1 para comedor, 1 por recámara y 1 para estancia alta si existe
         let unidadesAire = 2 + recamaras + (estanciaAlta ? 1 : 0);
         costoAires = unidadesAire * 12000;
       }
 
-      const costoExtras = costoClosets + costoCocina + costoPaneles + costoAires;
+      let costoAlberca = 0;
+      if (alberca) {
+        if (tipoVivienda === 'alto') costoAlberca = 380000;
+        if (tipoVivienda === 'lujo') costoAlberca = 500000;
+      }
+
+      let costoAsador = 0;
+      if (asador) {
+        if (tipoVivienda === 'medio') costoAsador = 80000;
+        if (tipoVivienda === 'alto' || tipoVivienda === 'lujo') costoAsador = 150000;
+      }
+
+      const costoExtras = costoClosets + costoCocina + costoPaneles + costoAires + costoAlberca + costoAsador;
       const costoTotal = costoBase + costoExtras;
 
-      // === Preparar texto de detalle de extras ===
+      // === Detalle de extras ===
       const extrasDetalle = [];
-
       if (costoClosets > 0) {
         extrasDetalle.push(`Closets en ${recamaras} recámara(s): $${costoClosets.toLocaleString('es-MX')} MXN`);
       }
@@ -646,6 +701,12 @@
       }
       if (costoAires > 0) {
         extrasDetalle.push(`Aires acondicionados (minisplits): $${costoAires.toLocaleString('es-MX')} MXN`);
+      }
+      if (costoAlberca > 0) {
+        extrasDetalle.push(`Alberca: $${costoAlberca.toLocaleString('es-MX')} MXN`);
+      }
+      if (costoAsador > 0) {
+        extrasDetalle.push(`Asador techado: $${costoAsador.toLocaleString('es-MX')} MXN`);
       }
       if (extrasDetalle.length === 0) {
         extrasDetalle.push('Sin equipamiento adicional seleccionado.');
@@ -686,12 +747,18 @@
         descripcion += `, closets en recámaras`;
       }
       if (aires) {
-        descripcion += `, preparación con equipos de aire acondicionado`;
+        descripcion += `, equipos de aire acondicionado`;
       }
       if (paneles === 'preparacion') {
         descripcion += `, con preparación para paneles solares`;
       } else if (paneles === 'incluidos') {
         descripcion += `, con paneles solares incluidos`;
+      }
+      if (alberca) {
+        descripcion += `, con alberca`;
+      }
+      if (asador) {
+        descripcion += `, con área de asador techado`;
       }
 
       if (ciudad || estado) {
@@ -708,7 +775,7 @@
         descripcion += ` Comentarios del cliente: "${comentarios}".`;
       }
 
-      // === Mostrar resultado en pantalla (Paso 4) ===
+      // === Mostrar resultado ===
       const resTipo = document.getElementById('resTipo');
       const resM2 = document.getElementById('resM2');
       const resCostoBase = document.getElementById('resCostoBase');
@@ -724,7 +791,6 @@
       resCostoTotal.textContent = costoTotal.toLocaleString('es-MX');
       resDescripcion.textContent = descripcion;
 
-      // Limpiar y llenar lista de extras
       resExtrasDetalle.innerHTML = '';
       extrasDetalle.forEach(item => {
         const li = document.createElement('li');
@@ -732,7 +798,6 @@
         resExtrasDetalle.appendChild(li);
       });
 
-      // Cambiar a paso 4
       paso3.classList.add('hidden');
       paso4.classList.remove('hidden');
     });
