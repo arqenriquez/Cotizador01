@@ -21,6 +21,12 @@
       text-align: center;
       margin-bottom: 24px;
     }
+    .logo {
+      display: block;
+      margin: 0 auto 12px;
+      max-width: 180px; /* tamaño mediano */
+      height: auto;
+    }
     h1 {
       margin: 0 0 8px;
       font-size: 1.8rem;
@@ -143,6 +149,8 @@
 <body>
   <div class="container">
     <header>
+      <!-- LOGO CENTRADO -->
+      <img src="logo01.jpg" alt="Logo Metta" class="logo">
       <h1>Cotizador paramétrico de casas habitación</h1>
       <p>Obtén una estimación rápida del costo de construcción de tu casa en México, según tipo de vivienda y programa arquitectónico.</p>
     </header>
@@ -208,6 +216,24 @@
               <span>Sí</span>
             </div>
           </div>
+
+          <!-- NUEVO: DOBLE ALTURA (solo para nivel medio/alto/lujo & 2 niveles) -->
+          <div class="field hidden" id="campoDobleAltura">
+            <label>Doble altura en sala</label>
+            <div class="checkbox-row">
+              <input type="checkbox" id="dobleAltura" disabled>
+              <span>Sí</span>
+            </div>
+          </div>
+
+          <!-- NUEVO: ESTANCIA EN PLANTA ALTA (solo para nivel medio/alto/lujo & 2 niveles) -->
+          <div class="field hidden" id="campoEstanciaAlta">
+            <label>Estancia en planta alta</label>
+            <div class="checkbox-row">
+              <input type="checkbox" id="estanciaAlta" disabled>
+              <span>Sí</span>
+            </div>
+          </div>
         </div>
         <div class="btn-row">
           <button class="btn-primary" id="btnContinuar">Continuar</button>
@@ -257,12 +283,12 @@
   </div>
 
   <script>
-    // ==== CONFIGURACIÓN: COSTO POR M2 (AJUSTA ESTOS VALORES A TU REALIDAD) ====
+    // ==== CONFIGURACIÓN: COSTO POR M2 (AJUSTADOS) ====
     const costosPorM2 = {
-      social: 9000,   // MXN/m² - ejemplo
-      medio: 13000,   // MXN/m² - ejemplo
-      alto: 18000,    // MXN/m² - ejemplo
-      lujo: 25000     // MXN/m² - ejemplo
+      social: 12000,  // MXN/m²
+      medio: 15000,   // MXN/m²
+      alto: 20000,    // MXN/m²
+      lujo: 25000     // MXN/m²
     };
 
     // ==== MANEJO DE PASOS ====
@@ -287,6 +313,39 @@
       paso1.classList.remove('hidden');
     });
 
+    // ==== OPCIONES ESPECIALES: DOBLE ALTURA Y ESTANCIA ALTA ====
+    const tipoViviendaSelect = document.getElementById('tipoVivienda');
+    const nivelesSelect = document.getElementById('niveles');
+    const campoDobleAltura = document.getElementById('campoDobleAltura');
+    const campoEstanciaAlta = document.getElementById('campoEstanciaAlta');
+    const dobleAlturaCheckbox = document.getElementById('dobleAltura');
+    const estanciaAltaCheckbox = document.getElementById('estanciaAlta');
+
+    function updateOpcionesEspeciales() {
+      const tipo = tipoViviendaSelect.value;
+      const niveles = parseInt(nivelesSelect.value || '1', 10);
+
+      // Solo disponible para nivel medio / alto / lujo y exactamente 2 niveles
+      const habilitarEspeciales = (tipo === 'medio' || tipo === 'alto' || tipo === 'lujo') && niveles === 2;
+
+      if (habilitarEspeciales) {
+        campoDobleAltura.classList.remove('hidden');
+        campoEstanciaAlta.classList.remove('hidden');
+        dobleAlturaCheckbox.disabled = false;
+        estanciaAltaCheckbox.disabled = false;
+      } else {
+        campoDobleAltura.classList.add('hidden');
+        campoEstanciaAlta.classList.add('hidden');
+        dobleAlturaCheckbox.checked = false;
+        estanciaAltaCheckbox.checked = false;
+        dobleAlturaCheckbox.disabled = true;
+        estanciaAltaCheckbox.disabled = true;
+      }
+    }
+
+    tipoViviendaSelect.addEventListener('change', updateOpcionesEspeciales);
+    nivelesSelect.addEventListener('change', updateOpcionesEspeciales);
+
     // ==== CÁLCULO PARAMÉTRICO ====
     btnCalcular.addEventListener('click', () => {
       const tipoVivienda = document.getElementById('tipoVivienda').value;
@@ -298,6 +357,8 @@
       const cuartoLavado = document.getElementById('cuartoLavado').checked;
       const estudio = document.getElementById('estudio').checked;
       const terraza = document.getElementById('terraza').checked;
+      const dobleAltura = dobleAlturaCheckbox.checked;
+      const estanciaAlta = estanciaAltaCheckbox.checked;
 
       if (!tipoVivienda) {
         alert('Falta seleccionar el tipo de vivienda.');
@@ -317,8 +378,9 @@
       let m2Base = 0;
 
       // Sala-comedor + cocina (se asumen siempre)
-      m2Base += 20; // sala-comedor
-      m2Base += 10; // cocina
+      const M2_SALA = 20;
+      m2Base += M2_SALA; // sala-comedor
+      m2Base += 10;      // cocina
 
       // Recámaras
       m2Base += recamaras * 12;
@@ -338,6 +400,16 @@
 
       // Terraza / roof
       if (terraza) m2Base += 10;
+
+      // NUEVO: Doble altura en sala (se suma otra vez el área de sala)
+      if (dobleAltura) {
+        m2Base += M2_SALA;
+      }
+
+      // NUEVO: Estancia en planta alta (asumimos 12 m²)
+      if (estanciaAlta) {
+        m2Base += 12;
+      }
 
       // Circulaciones y muros (25%)
       let m2Totales = m2Base * 1.25;
@@ -375,6 +447,9 @@
 
       resultadoDiv.classList.remove('hidden');
     });
+
+    // Inicializar opciones especiales en el primer render
+    updateOpcionesEspeciales();
 
     // Año en footer
     document.getElementById('anio').textContent = new Date().getFullYear();
